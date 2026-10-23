@@ -65,6 +65,11 @@ key 无论怎么填都会撞 `429 [1113] 余额不足或无可用资源包`。�
 
 ## 快速开始
 
+```bash
+git clone https://github.com/thekingofjunge/zcode-kit.git
+cd zcode-kit
+```
+
 ### 前置
 
 - Node.js 18+
