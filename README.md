@@ -261,6 +261,33 @@ ZCODE_DUMP_UPSTREAM=/path/to/dump.jsonl
 
 ---
 
+## 排障
+
+按这个顺序查，覆盖绝大多数情况：
+
+| 现象 | 多半是 | 怎么处理 |
+|---|---|---|
+| `找不到凭据文件` | ZCode 客户端没装，或从未登录 | 先打开客户端登录一次 |
+| 凭据全部解密失败 | 换过机器 / 重装过系统 | 密钥含主目录与用户名，属机器绑定；在客户端重新登录后跑 `npm run cred:refresh` |
+| `MISSING_CREDENTIAL` | 前端凭据没装好 | `node src/install-credential.cjs --verify` |
+| 连接被拒绝 | 本地路由没在跑 | `npm start`（或 `scripts\start.cmd`） |
+| 端口被占用 | `8788` 被别的程序占了 | 改 `config.json` 的 `router.port` |
+| `401 令牌已过期或验证不正确` | 凭据过期 | 本项目两个 token 都不会自动续期，跑 `npm run cred:refresh` |
+| `405 unusual activity` | 传输层指纹被风控 | 见「踩坑记录」第 5 条，改用 Bun 运行或换官方前端 |
+| `3001 parameter error` | 请求体不是合法 JSON | 见「踩坑记录」第 1 条——多半是 shell 把引号剥了 |
+| `429 [1113] 余额不足或无可用资源包` | 走错通道，或账号确实没这份订阅 | 对照「通道对照表」确认套餐与端点是否匹配 |
+| `500 当前用户不存在coding plan` | 你买的是 Start Plan，却去查了 coding-plan 的用量接口 | **正常现象，不是故障** |
+
+**三行命令逐项自检**：
+
+```bash
+node src/tools/selftest.cjs         # 本地接口 + 一次真实对话
+node src/tools/inspect-tokens.cjs   # 各 token 时效
+node src/tools/quota.cjs            # 上游返回的用量
+```
+
+---
+
 ## 已知限制
 
 - **凭据机器绑定**：兜底密钥含主目录与用户名，换机 / 重装系统后需重新登录客户端再刷新

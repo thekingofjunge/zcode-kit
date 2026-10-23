@@ -1,0 +1,48 @@
+name: 功能建议
+description: 想要新增的能力、协议支持或改进
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        README「已知限制」里已经列了尚未实现的部分（OpenAI 格式转发、闲时领票队列、MCP 反代、加速卡抽卡）。
+        如果你的想法在其中，也欢迎开 issue 说说你的使用场景——需求多了优先级自然会动。
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 你遇到的实际问题
+      description: 先说场景和痛点，再说想要的功能，这样更容易判断怎么实现最合理
+      placeholder: 例如：我在 Cline 里只能用 Anthropic 协议，想让路由也支持 OpenAI 格式
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 期望的解决方案
+      placeholder: 描述你希望它怎么工作
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 你考虑过的替代方案（可选）
+    validations:
+      required: false
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: 影响的层面
+      options:
+        - 凭据 / 认证
+        - 本地路由与协议支持
+        - 签名与指纹
+        - 诊断工具
+        - 文档
+        - 其它
+    validations:
+      required: true

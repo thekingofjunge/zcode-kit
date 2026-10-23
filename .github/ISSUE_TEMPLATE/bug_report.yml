@@ -1,0 +1,119 @@
+name: 报告问题
+description: 遇到报错、行为异常或不符合预期的情况
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ⚠️ 贴之前请先确认：不要粘贴任何凭据
+
+        这个项目全程与账号凭据打交道，请务必核对：
+
+        - ❌ 不要贴 `access_token` / `zcodejwttoken` / `apiKey` / `secretKey`
+        - ❌ 不要贴任何以 `eyJ` 开头的 JWT 字符串
+        - ❌ 不要贴 `~/.zcode/v2/credentials.json` 或 `cred.resolved.json` 的内容
+        - ❌ 不要贴完整的 `config.json`（里面可能有你的路由密钥）
+        - ✅ 版本号、报错文本、HTTP 状态码、业务错误码（如 `3001` / `3012` / `1113`）请放心贴
+
+        需要引用长串时，请用 `sk-***`、`<redacted>` 之类占位，或只保留前 6 位与长度。
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: 问题描述
+      description: 一句话说清楚遇到了什么
+      placeholder: 例如：本地路由 health 正常，但调用 /v1/messages 固定返回 405
+    validations:
+      required: true
+
+  - type: dropdown
+    id: stage
+    attributes:
+      label: 出问题的阶段
+      description: 对应 README「验证状态」表里的分层，不确定就选最后一项
+      options:
+        - 凭据读取（credential-store / cred:extract）
+        - OAuth 兑换（resolve-plan-cred / cred:resolve）
+        - 凭据安装到前端（install-credential）
+        - 本地路由启动或本地接口（/health、/v1/models）
+        - 发往上游的请求被拒（4xx / 业务错误码）
+        - 传输层被拦（405 unusual activity）
+        - 签名或握手相关
+        - 文档表述不清 / 想补充说明
+        - 不清楚
+    validations:
+      required: true
+
+  - type: dropdown
+    id: plan
+    attributes:
+      label: 你的套餐类型
+      description: ZCode 客户端「模型设置」页左侧能看到当前连接的是哪一个
+      options:
+        - Start Plan（体验套餐）
+        - coding-plan 个人版
+        - coding-plan 团队版
+        - 闲时 / off-peak
+        - 不清楚
+    validations:
+      required: true
+
+  - type: input
+    id: versions
+    attributes:
+      label: 环境信息
+      description: 系统 / Node 版本 / ZCode 客户端版本，三项都填一下
+      placeholder: Windows 11 23H2 · Node v24.16.0 · ZCode 3.16.3
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 从哪一步开始、执行了什么命令
+      placeholder: |
+        1. npm run cred:refresh  → 成功
+        2. npm start             → 监听 127.0.0.1:8788
+        3. curl ... /v1/messages → 405
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+      placeholder: 应当返回一段 JSON（或 SSE 流）
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际结果
+      description: 完整报错文本（记得去掉凭据）。如果是 HTTP 响应，连状态码和响应头一起贴，`Server:` 那行很有用
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: selftest
+    attributes:
+      label: 自检输出（可选）
+      description: 粘贴 `node src/tools/selftest.cjs` 与 `node src/tools/inspect-tokens.cjs` 的输出，能大幅加快定位
+      render: shell
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 我已阅读 README 的「踩坑记录」与「已知限制」，问题不在其中
+          required: true
+        - label: 我确认上述内容**不包含任何 token、密钥或凭据原文**
+          required: true
+        - label: 我已尝试 `npm run cred:refresh`（若属凭据类问题）
+          required: false

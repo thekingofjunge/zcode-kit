@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 先读 README 的「踩坑记录」与「已知限制」
+    url: https://github.com/thekingofjunge/zcode-kit#踩坑记录
+    about: 405 风控、3001 参数错误、凭据不会自动续期这几类问题的结论都在这里
+  - name: 📐 协议细节（签名 V4 / 身份头 / 端点重映射）
+    url: https://github.com/thekingofjunge/zcode-kit/blob/main/docs/PROTOCOL.md
+    about: 想确认自己发的请求是否符合上游要求，先看这份
+  - name: 🔍 排查清单
+    url: https://github.com/thekingofjunge/zcode-kit#排障
+    about: 从 health 检查到上游报错的逐项排查顺序

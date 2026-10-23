@@ -1,0 +1,23 @@
+# 自动生成 Release Notes 时的分类规则
+# 依赖 PR / issue 上的标签
+changelog:
+  categories:
+    - title: 新增功能
+      labels:
+        - enhancement
+        - feature
+    - title: 问题修复
+      labels:
+        - bug
+        - fix
+    - title: 文档
+      labels:
+        - documentation
+        - docs
+    - title: 协议与兼容性
+      labels:
+        - protocol
+        - compatibility
+    - title: 其它变更
+      labels:
+        - "*"
