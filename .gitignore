@@ -1,0 +1,18 @@
+# 真实凭据与派生文件，绝不入库
+config.json
+*.plain.json
+*cred*.json
+!config.example.json
+!package.json
+
+# 运行期产物
+dump.jsonl
+out.log
+err.log
+cookies.txt
+*.tmp
+test.json
+probe.json
+
+# 依赖
+node_modules/

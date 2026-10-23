@@ -1,0 +1,34 @@
+{
+  "name": "zcode-kit",
+  "version": "1.0.0",
+  "description": "把 ZCode 客户端（智谱 GLM 编码套餐）的额度，变成任意客户端可用的标准 Anthropic / OpenAI 接口",
+  "type": "commonjs",
+  "main": "src/router.cjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node src/router.cjs",
+    "selftest": "node src/tools/selftest.cjs",
+    "cred:extract": "node src/credential-store.cjs",
+    "cred:resolve": "node src/resolve-plan-cred.cjs",
+    "cred:install": "node src/install-credential.cjs",
+    "cred:refresh": "node src/refresh-all.cjs",
+    "quota": "node src/tools/quota.cjs",
+    "tokens": "node src/tools/inspect-tokens.cjs",
+    "dump": "node src/tools/dump-read.cjs"
+  },
+  "keywords": [
+    "zcode",
+    "zhipu",
+    "bigmodel",
+    "glm",
+    "coding-plan",
+    "start-plan",
+    "anthropic",
+    "openai-compatible",
+    "local-proxy"
+  ],
+  "license": "MIT",
+  "dependencies": {}
+}

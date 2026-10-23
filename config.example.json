@@ -1,0 +1,33 @@
+{
+  "_comment": "复制为 config.json 后按需修改。所有路径支持 %USERPROFILE% 展开。",
+
+  "zcodeDataDir": "%USERPROFILE%\\.zcode\\v2",
+  "proxyStoreDir": "%USERPROFILE%\\.zcode-proxy",
+
+  "provider": "bigmodel",
+
+  "router": {
+    "host": "127.0.0.1",
+    "port": 8788,
+    "apiKey": "change-me-to-a-random-string"
+  },
+
+  "upstream": {
+    "startPlanBase": "https://zcode.z.ai/api/v1/zcode-plan/anthropic",
+    "codingPlanAnthropicBase": "https://open.bigmodel.cn/api/anthropic",
+    "routingOrigin": "https://zcode.z.ai",
+    "signingOrigin": "https://open.bigmodel.cn"
+  },
+
+  "identity": {
+    "appVersion": "3.16.3",
+    "sourceTitle": "cli",
+    "refererOrigin": "https://zcode.z.ai",
+    "releaseChannel": "production"
+  },
+
+  "models": [
+    { "id": "glm-5.3", "name": "GLM-5.3", "contextWindow": 1000000, "maxTokens": 128000, "vision": true },
+    { "id": "glm-5.3-flash", "name": "GLM-5.3-Flash", "contextWindow": 1000000, "maxTokens": 128000, "vision": true }
+  ]
+}
