@@ -191,12 +191,16 @@ curl.exe --data-binary "@body.json" ...
 
 ### 3. 405 与 400 的区别很有信息量
 
-- `405 + code 3012 unusual activity` = **传输层**被风控拦（TLS/HTTP 指纹或请求频率），请求根本没到业务逻辑
+- `405 + code 3012 unusual activity` = 被边缘风控拦（**传输层指纹、请求频率、或请求体特征**），请求没到业务逻辑
 - `400 + code 3001 parameter error` = 到了业务层，但 body/参数不对
 - `401` = 凭据或通道不匹配
+- `429 + code 3009 model concurrency limit exceeded` = 账号**并发超限**（与 405 是两码事，见第 8 条）
 
 用 Node 内置 `fetch` 打 `zcode.z.ai` 时遇到过 405，而换成 curl 就变成 400 —— 同一 IP、同一时刻，
 差别只在传输栈指纹。所以**别把 405 当成鉴权问题去查**。
+
+**但 405 不止一个成因**：`code 3012` 也可能是**请求体本身**被判为异常（如 `system` 字段的形状不对），
+与传输栈无关。区分方法见第 7 条。
 
 ### 4. 两个 token 都不会自动续期
 
@@ -236,6 +240,87 @@ ZCODE_DUMP_UPSTREAM=/path/to/dump.jsonl
 然后用 `node src/tools/dump-read.cjs <file>` 看。敏感头会自动脱敏。
 比起猜，这是定位「我到底发出去了什么」最快的办法。
 
+> ⚠️ dump 里是**完整请求原文**（含全部对话历史、工具定义、图片 base64）。
+> 排查完记得删掉，别随手分享。
+
+### 7. 405 `code 3012`：先怀疑 `system` 字段的形状 ⚠️
+
+**症状**：agent 类客户端（Claude Code、DeepSeek Harness 等）全部请求稳定 405，
+但**官方客户端正常**、**裸消息请求正常**。
+
+**为什么偏偏是 agent**：agent 每个请求都必须带系统提示词（`system` 字段），
+而普通对话可以不带。所以「带 system 必挂、不带 system 必过」是它的特征指纹。
+
+**判断方法**（两步对照）：
+
+```bash
+# A. 不带 system —— 应当成功
+{"model":"GLM-5.3","max_tokens":16,"messages":[{"role":"user","content":"hi"}]}
+
+# B. 带 system —— 若必挂，就是这个问题
+{"model":"GLM-5.3","max_tokens":16,
+ "system":[{"type":"text","text":"You are helpful."}],
+ "messages":[{"role":"user","content":"hi"}]}
+```
+
+同一个代理、同一个 IP、相隔几秒，只改这一个字段。**若 A 过 B 挂，即可确诊。**
+
+**修复**：升级前端到 **v4.8.6+**，其中含
+`fix(start-plan): always emit the official 3-block system shape (issue #71)`。
+根因是转发时 `system` 的块形状（block shape）不符合服务端预期，被指纹识别命中。
+
+**注意别误判**：这一条很容易被当成「限流」「IP 被封」「凭据过期」去查——
+本仓库作者为此绕了几小时。**先做 A/B 对照，再谈其它。**
+
+### 8. `Connection error` 先查端口，别怀疑进程
+
+客户端报 `Connection error` / `TRANSPORT` 时，**第一件事是对端口**：
+
+```powershell
+Test-NetConnection 127.0.0.1 -Port 8080 -InformationLevel Quiet   # True = 有服务
+```
+
+然后核对客户端的 `baseURL` 与代理实际监听的端口是否一致：
+
+```yaml
+baseURL: http://127.0.0.1:8081/v1    # ← 客户端连 8081
+# 而代理实际监听 8080                  ← 对不上就是这个问题
+```
+
+**最容易踩的变体**：为了测试新版本，在另一个端口（如 8081）起了一个临时实例，
+测完关掉，**却忘了客户端配置曾被改到那个端口**。之后所有请求都 `Connection error`，
+看起来像「进程崩了」。
+
+**关键鉴别点**：
+
+| 现象 | 含义 |
+|---|---|
+| `Connection error` + TCP 不通 | 进程真的不在了 |
+| `Connection error` + **TCP 通** | **端口对不上，或客户端配置未生效** |
+| 日志「停止写入」 | **≠ 进程死亡**，也可能只是没人再发请求了 |
+
+改完 `cordis.patch.yml`（或等价配置）**必须重启客户端**才生效——它是启动时读取的。
+
+### 9. Release notes 不可靠，真实变更看 git log
+
+本仓库涉及的前端项目（zcode-api）**release notes 有时没有任何有效信息**
+（见过只写一句无关内容的），但 `git log` 里的提交信息是完整的：
+
+```bash
+gh api repos/TriDefender/zcode-api/compare/v4.8.2...v4.8.6 \
+  | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{
+      JSON.parse(s).commits.forEach(c=>console.log(c.commit.message.split('\n')[0]))})"
+```
+
+或者直接看某个版本区间改了哪些文件：
+
+```bash
+gh api repos/TriDefender/zcode-api/compare/v4.8.2...v4.8.6 |
+  grep -o '"filename":"[^"]*"' | sort -u
+```
+
+**是否值得升级，判断依据是提交内容，不是 release 页的措辞。**
+
 ---
 
 ## 验证状态
@@ -270,11 +355,14 @@ ZCODE_DUMP_UPSTREAM=/path/to/dump.jsonl
 | `找不到凭据文件` | ZCode 客户端没装，或从未登录 | 先打开客户端登录一次 |
 | 凭据全部解密失败 | 换过机器 / 重装过系统 | 密钥含主目录与用户名，属机器绑定；在客户端重新登录后跑 `npm run cred:refresh` |
 | `MISSING_CREDENTIAL` | 前端凭据没装好 | `node src/install-credential.cjs --verify` |
+| **`Connection error`** | **连不上本地路由**——端口对不上，或路由没在跑 | **先 `Test-NetConnection 127.0.0.1 -Port 8080`，再核对客户端 `baseURL`**；见「踩坑记录」第 8 条 |
 | 连接被拒绝 | 本地路由没在跑 | `npm start`（或 `scripts\start.cmd`） |
 | 端口被占用 | `8788` 被别的程序占了 | 改 `config.json` 的 `router.port` |
 | `401 令牌已过期或验证不正确` | 凭据过期 | 本项目两个 token 都不会自动续期，跑 `npm run cred:refresh` |
-| `405 unusual activity` | 传输层指纹被风控 | 见「踩坑记录」第 5 条，改用 Bun 运行或换官方前端 |
+| **`405 unusual activity`（agent 客户端必挂）** | **`system` 字段形状不对，被指纹识别** | 见「踩坑记录」第 7 条——做「带/不带 system」A/B 对照确诊，升级前端到 v4.8.6+ |
+| `405 unusual activity`（所有客户端都挂） | 传输层指纹被风控 | 见「踩坑记录」第 5 条，改用 Bun 运行或换官方前端 |
 | `3001 parameter error` | 请求体不是合法 JSON | 见「踩坑记录」第 1 条——多半是 shell 把引号剥了 |
+| **`429 code 3009 model concurrency limit exceeded`** | **账号并发超限**（开了多个子智能体/后台任务） | 降低并发；重试会加剧拥塞，形成雪崩 |
 | `429 [1113] 余额不足或无可用资源包` | 走错通道，或账号确实没这份订阅 | 对照「通道对照表」确认套餐与端点是否匹配 |
 | `500 当前用户不存在coding plan` | 你买的是 Start Plan，却去查了 coding-plan 的用量接口 | **正常现象，不是故障** |
 
